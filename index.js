@@ -8,14 +8,11 @@ app.use(express.json());
 // --- ข้อมูลจำลอง ---
 const API_INFO = {
   name: "MaopaoAPi",
-  version: "1.0.1",
+  version: "1.0.2",
   description: "MaopaoAPi",
   author: "Maopao"
 };
 
-// --- Routes ---
-
-// 1. Get Version (ตามที่ขอมาครับ)
 app.get('/version', (req, res) => {
   res.json({
     status: "success",
@@ -23,6 +20,11 @@ app.get('/version', (req, res) => {
     details: API_INFO
   });
 });
+
+// Legal Routes
+const legalController = require('./controllers/legalController');
+app.get('/legal/privacy', legalController.getPrivacyPolicy);
+app.get('/legal/term', legalController.getTermsAndConditions);
 
 // รัน Server
 app.listen(PORT, () => {
