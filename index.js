@@ -9,7 +9,7 @@ app.use(express.json());
 // --- ข้อมูลจำลอง ---
 const API_INFO = {
   name: "MaopaoAPi",
-  version: "1.0.2",
+  version: "1.0.3",
   description: "MaopaoAPi",
   author: "Maopao"
 };
