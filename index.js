@@ -24,7 +24,7 @@ app.get('/version', (req, res) => {
 // Legal Routes
 const legalController = require('./controllers/legalController');
 app.get('/legal/privacy', legalController.getPrivacyPolicy);
-app.get('/legal/term', legalController.getTermsAndConditions);
+app.get('/legal/terms', legalController.getTermsAndConditions);
 
 // รัน Server
 app.listen(PORT, () => {
