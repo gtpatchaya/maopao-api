@@ -1,4 +1,5 @@
 const express = require('express');
+require('dotenv').config();
 const app = express();
 const PORT = 3000;
 
@@ -25,6 +26,10 @@ app.get('/version', (req, res) => {
 const legalController = require('./controllers/legalController');
 app.get('/legal/privacy', legalController.getPrivacyPolicy);
 app.get('/legal/terms', legalController.getTermsAndConditions);
+
+// 3. Auth Routes
+const authController = require('./controllers/authController');
+app.post('/auth/check-email', authController.checkEmailExists);
 
 // รัน Server
 app.listen(PORT, () => {
