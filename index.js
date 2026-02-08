@@ -1,15 +1,17 @@
 const express = require('express');
 require('dotenv').config();
+const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = 3000;
 
 // บอกให้ Express อ่าน JSON ได้
 app.use(express.json());
+app.use(cookieParser());
 
 // --- ข้อมูลจำลอง ---
 const API_INFO = {
   name: "MaopaoAPi",
-  version: "1.0.3",
+  version: "1.0.4",
   description: "MaopaoAPi",
   author: "Maopao"
 };
@@ -30,6 +32,7 @@ app.get('/legal/terms', legalController.getTermsAndConditions);
 // 3. Auth Routes
 const authController = require('./controllers/authController');
 app.post('/auth/check-email', authController.checkEmailExists);
+app.post('/auth/register', authController.register);
 
 // รัน Server
 app.listen(PORT, () => {
