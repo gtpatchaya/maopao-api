@@ -35,6 +35,10 @@ app.post('/auth/check-email', authController.checkEmailExists);
 app.post('/auth/register', authController.register);
 app.post('/auth/login', authController.login);
 
+// 4. Device Routes
+const deviceController = require('./controllers/deviceController');
+app.get('/device/:serialNumber/lastedRecord', deviceController.getLatestRecordBySerialNumber);
+
 // รัน Server
 app.listen(PORT, () => {
   console.log(`--------------------------------------`);
