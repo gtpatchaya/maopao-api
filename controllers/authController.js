@@ -15,6 +15,17 @@ const ConsentType = {
   cookie: 'cookie'
 };
 
+
+// Helper to check environment variables
+const checkEnvVariables = () => {
+  const missing = [];
+  if (!process.env.JWT_SECRET) missing.push("JWT_SECRET");
+  if (!process.env.REFRESH_TOKEN_SECRET) missing.push("REFRESH_TOKEN_SECRET");
+  if (missing.length > 0) {
+    throw new Error(`Missing environment variables: ${missing.join(", ")}`);
+  }
+};
+
 const authController = {
   register: async (req, res) => {
     try {
@@ -94,6 +105,106 @@ const authController = {
     } catch (error) {
       console.error("❌ Register error:", error);
       res.status(500).json(errorResponse(500, error?.message || "Internal server error"));
+    }
+  },
+
+  login: async (req, res) => {
+    try {
+      console.log("🔐 Login attempt started");
+
+      // Check environment variables first
+      try {
+        checkEnvVariables();
+      } catch (envError) {
+        console.error("❌ Environment variables check failed:", envError);
+        const error = new Error("Server configuration error");
+        error.status = 428;
+        throw error;
+      }
+
+      // Validate request body
+      const { email, password } = req.body;
+      console.log("📧 Login request for email:", email);
+
+      if (!email || !password) {
+        return res.status(400).json(errorResponse(400, "กรุณากรอก email และ password"));
+      }
+
+      // Find user
+      console.log("🔍 Searching for user in database...");
+      const user = await prisma.user.findUnique({
+        where: { email },
+        select: {
+          id: true,
+          email: true,
+          password: true,
+          name: true,
+          dateOfBirth: true,
+        },
+      });
+
+      if (!user) {
+        console.log("❌ User not found for email:", email);
+        return res.status(401).json(errorResponse(401, "รหัสผ่านผิด"));
+      }
+
+      console.log("✅ User found, verifying password...");
+      // Verify password
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        console.log("❌ Invalid password for user:", email);
+        return res.status(401).json(errorResponse(401, "รหัสผ่านผิด"));
+      }
+
+      console.log("✅ Password verified, generating tokens...");
+      // Generate tokens
+      const tokens = generateTokens({
+        userId: user.id,
+        email: user.email,
+      });
+
+      console.log("✅ Tokens generated successfully");
+      // Set refresh token in HTTP-only cookie
+      res.cookie("refreshToken", tokens.refreshToken, cookieOptions);
+
+      // Return success response with access token and user data
+      res.status(200).json(
+        successResponse(200, "success", {
+          accessToken: tokens.accessToken,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            dateOfBirth: user.dateOfBirth,
+          },
+        })
+      );
+      console.log("✅ Login successful for user:", email);
+    } catch (error) {
+      console.error("❌ Login error:", error);
+
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({
+          status: "error",
+          message: "Validation failed",
+          errors: error.message,
+        });
+      }
+
+      // Handle specific error status codes
+      if (error.status === 428) {
+        return res.status(428).json({
+          status: "error",
+          message: "เซิร์ฟเวอร์ยังไม่พร้อมใช้งาน กรุณาติดต่อผู้ดูแลระบบ",
+          details: "Server configuration error"
+        });
+      }
+
+      console.error("❌ Unexpected login error:", error);
+      res.status(500).json({
+        status: "error",
+        message: "เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์",
+      });
     }
   },
 
