@@ -19,8 +19,8 @@ const ConsentType = {
 // Helper to check environment variables
 const checkEnvVariables = () => {
   const missing = [];
-  if (!process.env.JWT_SECRET) missing.push("JWT_SECRET");
-  if (!process.env.REFRESH_TOKEN_SECRET) missing.push("REFRESH_TOKEN_SECRET");
+  if (!process.env.JWT_ACCESS_SECRET) missing.push("JWT_ACCESS_SECRET");
+  if (!process.env.JWT_REFRESH_SECRET) missing.push("JWT_REFRESH_SECRET");
   if (missing.length > 0) {
     throw new Error(`Missing environment variables: ${missing.join(", ")}`);
   }
