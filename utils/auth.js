@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'your-access-token-secret'; // Fallback for dev, but strongly valid .env usage
-const REFRESH_TOKEN_SECRET = process.env.REFRESH_TOKEN_SECRET || 'your-refresh-token-secret';
+const JWT_SECRET = process.env.JWT_ACCESS_SECRET || 'your-access-token-secret'; // Fallback for dev, but strongly valid .env usage
+const REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-token-secret';
 
 const generateTokens = (payload) => {
   const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' }); // Short-lived access token

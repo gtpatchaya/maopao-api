@@ -11,7 +11,7 @@ app.use(cookieParser());
 // --- ข้อมูลจำลอง ---
 const API_INFO = {
   name: "MaopaoAPi",
-  version: "1.0.6",
+  version: "1.0.7",
   description: "MaopaoAPi",
   author: "Maopao"
 };
@@ -37,7 +37,18 @@ app.post('/auth/login', authController.login);
 
 // 4. Device Routes
 const deviceController = require('./controllers/deviceController');
-app.get('/device/:serialNumber/lastedRecord', deviceController.getLatestRecordBySerialNumber);
+
+const { authenticateToken } = require('./middlewares/authMiddleware');
+
+app.get('/device/:serialNumber/lastedRecord', authenticateToken, deviceController.getLatestRecordBySerialNumber);
+app.post('/device-user/assign', authenticateToken, deviceController.assignDeviceToUser);
+app.post('/device/updateDeviceId/:sn/:id', authenticateToken, deviceController.updateDeviceId);
+app.post('/device/updateName/:sn', authenticateToken, deviceController.updateDeviceName);
+app.post('/device/updateDeviceSyncInfo/:deviceId', authenticateToken, deviceController.updateDeviceSyncInfo);
+
+// 5. Calculation Routes
+const calculationController = require('./controllers/calculationController');
+app.get('/calculations/analysis/:val', calculationController.calculationAlgoholValue);
 
 // รัน Server
 app.listen(PORT, () => {
