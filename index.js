@@ -11,7 +11,7 @@ app.use(cookieParser());
 // --- ข้อมูลจำลอง ---
 const API_INFO = {
   name: "MaopaoAPi",
-  version: "1.0.5",
+  version: "1.0.6",
   description: "MaopaoAPi",
   author: "Maopao"
 };
