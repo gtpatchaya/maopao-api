@@ -6,9 +6,32 @@ const app = express();
 const PORT = 3000;
 
 app.use(cors({
-  origin: true,
-  credentials: true
+  origin: (origin, callback) => {
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Cache-Control',
+    'X-File-Name'
+  ],
+  exposedHeaders: ['Content-Length', 'X-Kuma-Revision'],
+  maxAge: 86400
 }));
+
+app.options('*', cors());
+
+app.use((req, res, next) => {
+  res.header('X-Content-Type-Options', 'nosniff');
+  res.header('X-Frame-Options', 'DENY');
+  res.header('X-XSS-Protection', '1; mode=block');
+  next();
+});
 
 app.use(express.json());
 app.use(cookieParser());
