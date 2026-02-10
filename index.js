@@ -32,30 +32,30 @@ app.get('/version', (req, res) => {
   }
 });
 
-// // Legal Routes
-// const legalController = require('./controllers/legalController');
-// app.get('/legal/privacy', legalController.getPrivacyPolicy);
-// app.get('/legal/terms', legalController.getTermsAndConditions);
+// Legal Routes
+const legalController = require('./controllers/legalController');
+app.get('/legal/privacy', legalController.getPrivacyPolicy);
+app.get('/legal/terms', legalController.getTermsAndConditions);
 
-// // 3. Auth Routes
-// const authController = require('./controllers/authController');
-// app.post('/auth/check-email', authController.checkEmailExists);
-// app.post('/auth/register', authController.register);
-// app.post('/auth/login', authController.login);
+// 3. Auth Routes
+const authController = require('./controllers/authController');
+app.post('/auth/check-email', authController.checkEmailExists);
+app.post('/auth/register', authController.register);
+app.post('/auth/login', authController.login);
 
-// // 4. Device Routes
-// const deviceController = require('./controllers/deviceController');
+// 4. Device Routes
+const deviceController = require('./controllers/deviceController');
 
-// const { authenticateToken } = require('./middlewares/authMiddleware');
+const { authenticateToken } = require('./middlewares/authMiddleware');
 
 
-// app.get('/device/:serialNumber/lastedRecord', authenticateToken, deviceController.getLatestRecordBySerialNumber);
-// app.get('/device/getByDeviceId/:sn', authenticateToken, deviceController.getDeviceById);
-// app.get('/device/getBySn/:sn/:userId', authenticateToken, deviceController.getDeviceBySn);
-// app.get('/device/:serialNumber/records', authenticateToken, deviceController.getDeviceRecordsBySerialNumber);
-// app.post('/device/data', authenticateToken, deviceController.addDataRecord);
-// app.post('/device-user/assign', authenticateToken, deviceController.assignDeviceToUser);
-// app.get('/device-user/devicebyuser/:userId', authenticateToken, deviceController.getDevicesByUserId);
+app.get('/device/:serialNumber/lastedRecord', authenticateToken, deviceController.getLatestRecordBySerialNumber);
+app.get('/device/getByDeviceId/:sn', authenticateToken, deviceController.getDeviceById);
+app.get('/device/getBySn/:sn/:userId', authenticateToken, deviceController.getDeviceBySn);
+app.get('/device/:serialNumber/records', authenticateToken, deviceController.getDeviceRecordsBySerialNumber);
+app.post('/device/data', authenticateToken, deviceController.addDataRecord);
+app.post('/device-user/assign', authenticateToken, deviceController.assignDeviceToUser);
+app.get('/device-user/devicebyuser/:userId', authenticateToken, deviceController.getDevicesByUserId);
 // app.get('/device/latestState/:deviceId', authenticateToken, deviceController.getDeviceLatestState);
 // app.post('/device/updateDeviceId/:sn/:id', authenticateToken, deviceController.updateDeviceId);
 // app.post('/device/updateName/:sn', authenticateToken, deviceController.updateDeviceName);
