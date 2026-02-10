@@ -146,9 +146,16 @@ app.use((req, res) => {
 /* =========================
    START SERVER
 ========================= */
-app.listen(PORT, () => {
-  console.log(`--------------------------------------`);
-  console.log(`Server running: http://localhost:${PORT}`);
-  console.log(`Version check: http://localhost:${PORT}/api/v1/version`);
-  console.log(`--------------------------------------`);
-});
+/* =========================
+   START SERVER
+========================= */
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`--------------------------------------`);
+    console.log(`Server running: http://localhost:${PORT}`);
+    console.log(`Version check: http://localhost:${PORT}/api/v1/version`);
+    console.log(`--------------------------------------`);
+  });
+}
+
+module.exports = app;
