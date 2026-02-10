@@ -44,7 +44,7 @@ app.post('/auth/register', authController.register);
 app.post('/auth/login', authController.login);
 
 // 4. Device Routes
-// const deviceController = require('./controllers/deviceController');
+const deviceController = require('./controllers/deviceController');
 
 // const { authenticateToken } = require('./middlewares/authMiddleware');
 

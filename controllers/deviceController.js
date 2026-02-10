@@ -1,6 +1,6 @@
 const prisma = require('../prismaClient');
 const { successResponse, errorResponse } = require('../utils/response');
-const { v4: uuidv4 } = require('uuid');
+const { v4 } = require('uuid');
 
 const getLatestRecordBySerialNumber = async (req, res, next) => {
   try {
@@ -279,7 +279,7 @@ const addDataRecord = async (req, res, next) => {
 
     if (!lastState) {
       // CASE A: ยังไม่เคยมีข้อมูลเลย -> สร้าง Session ใหม่
-      sessionToSave = uuidv4();
+      sessionToSave = v4();
     } else {
       // CASE B: มีข้อมูลเก่า
       const lastTimestamp = new Date(lastState.timestamp).getTime();
@@ -304,7 +304,7 @@ const addDataRecord = async (req, res, next) => {
       if (reqTimestamp > lastTimestamp) {
         // เงื่อนไข Rollover: เลข record น้อยลง (เช่น 1000 -> 1) -> ขึ้น Session ใหม่
         if (recordNumber < lastRecordNum) {
-          sessionToSave = uuidv4();
+          sessionToSave = v4();
         }
       }
       // Note: ถ้าเป็นข้อมูลย้อนหลัง เราจะใช้ session เดิมเพื่อให้เกาะกลุ่มกัน
