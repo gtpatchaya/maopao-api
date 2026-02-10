@@ -10,13 +10,7 @@ const PORT = 3000;
    ✅ CORS CONFIG (ตัวเดียวจบ)
 ========================= */
 const corsOptions = {
-  origin: (origin, callback) => {
-    console.log("🌐 CORS Origin:", origin);
-
-    // อนุญาตทุก origin (รองรับ credentials)
-    if (!origin) return callback(null, true);
-    return callback(null, true);
-  },
+  origin: true,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
   allowedHeaders: [
@@ -33,6 +27,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+app.options(/(.*)/, cors(corsOptions));
 
 /* =========================
    SECURITY HEADER
