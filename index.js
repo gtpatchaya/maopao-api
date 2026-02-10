@@ -46,31 +46,31 @@ app.post('/auth/login', authController.login);
 // 4. Device Routes
 const deviceController = require('./controllers/deviceController');
 
-// const { authenticateToken } = require('./middlewares/authMiddleware');
+const { authenticateToken } = require('./middlewares/authMiddleware');
 
-// app.get('/device/:serialNumber/lastedRecord', authenticateToken, deviceController.getLatestRecordBySerialNumber);
-// app.get('/device/getByDeviceId/:sn', authenticateToken, deviceController.getDeviceById);
+app.get('/device/:serialNumber/lastedRecord', authenticateToken, deviceController.getLatestRecordBySerialNumber);
+app.get('/device/getByDeviceId/:sn', authenticateToken, deviceController.getDeviceById);
 
-// app.get('/device/getBySn/:sn/:userId', authenticateToken, deviceController.getDeviceBySn);
-// app.get('/device/:serialNumber/records', authenticateToken, deviceController.getDeviceRecordsBySerialNumber);
-// app.post('/device/data', authenticateToken, deviceController.addDataRecord);
-// app.post('/device-user/assign', authenticateToken, deviceController.assignDeviceToUser);
-// app.get('/device-user/devicebyuser/:userId', authenticateToken, deviceController.getDevicesByUserId);
+app.get('/device/getBySn/:sn/:userId', authenticateToken, deviceController.getDeviceBySn);
+app.get('/device/:serialNumber/records', authenticateToken, deviceController.getDeviceRecordsBySerialNumber);
+app.post('/device/data', authenticateToken, deviceController.addDataRecord);
+app.post('/device-user/assign', authenticateToken, deviceController.assignDeviceToUser);
+app.get('/device-user/devicebyuser/:userId', authenticateToken, deviceController.getDevicesByUserId);
 
-// ด้านล่างนี้ไม่เกี่ยว
-// app.get('/device/latestState/:deviceId', authenticateToken, deviceController.getDeviceLatestState);
-// app.post('/device/updateDeviceId/:sn/:id', authenticateToken, deviceController.updateDeviceId);
-// app.post('/device/updateName/:sn', authenticateToken, deviceController.updateDeviceName);
-// app.post('/device/updateDeviceUnit/:sn', authenticateToken, deviceController.updateDeviceUnit);
-// app.post('/device/updateDeviceSyncInfo/:deviceId', authenticateToken, deviceController.updateDeviceSyncInfo);
+ด้านล่างนี้ไม่เกี่ยว
+app.get('/device/latestState/:deviceId', authenticateToken, deviceController.getDeviceLatestState);
+app.post('/device/updateDeviceId/:sn/:id', authenticateToken, deviceController.updateDeviceId);
+app.post('/device/updateName/:sn', authenticateToken, deviceController.updateDeviceName);
+app.post('/device/updateDeviceUnit/:sn', authenticateToken, deviceController.updateDeviceUnit);
+app.post('/device/updateDeviceSyncInfo/:deviceId', authenticateToken, deviceController.updateDeviceSyncInfo);
 
-// // 5. Calculation Routes
-// const calculationController = require('./controllers/calculationController');
-// app.get('/calculations/analysis/:val', calculationController.calculationAlgoholValue);
+// 5. Calculation Routes
+const calculationController = require('./controllers/calculationController');
+app.get('/calculations/analysis/:val', calculationController.calculationAlgoholValue);
 
-// // 6. User Routes
-// const userController = require('./controllers/userController');
-// app.get('/user/:id', authenticateToken, userController.getById);
+// 6. User Routes
+const userController = require('./controllers/userController');
+app.get('/user/:id', authenticateToken, userController.getById);
 
 // รัน Server
 app.listen(PORT, () => {
