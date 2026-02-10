@@ -4,31 +4,39 @@ require('dotenv').config();
 const cookieParser = require('cookie-parser');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = 3000;
 
-/* ==============================
-   ✅ GLOBAL MIDDLEWARE
-============================== */
+/* =========================
+   ✅ CORS CONFIG (ตัวเดียวจบ)
+========================= */
+const corsOptions = {
+  origin: (origin, callback) => {
+    console.log("🌐 CORS Origin:", origin);
 
-// Trust proxy (สำคัญมากเวลาอยู่หลัง nginx / plesk)
-app.set('trust proxy', 1);
+    // อนุญาตทุก origin (รองรับ credentials)
+    if (!origin) return callback(null, true);
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Cache-Control',
+    'X-File-Name'
+  ],
+  exposedHeaders: ['Content-Length', 'X-Kuma-Revision'],
+  maxAge: 86400
+};
 
-// Debug log (เช็คว่า request เข้า server จริงไหม)
-app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.originalUrl}`);
-  next();
-});
+app.use(cors(corsOptions));
 
-// ✅ CORS (ใช้แบบนี้พอ ชัวร์สุด)
-app.use(cors({
-  origin: true,
-  credentials: true
-}));
-
-// ✅ Preflight
-app.options('*', cors());
-
-// ✅ Security headers
+/* =========================
+   SECURITY HEADER
+========================= */
 app.use((req, res, next) => {
   res.header('X-Content-Type-Options', 'nosniff');
   res.header('X-Frame-Options', 'DENY');
@@ -36,24 +44,15 @@ app.use((req, res, next) => {
   next();
 });
 
+/* =========================
+   PARSER
+========================= */
 app.use(express.json());
 app.use(cookieParser());
 
-/* ==============================
-   ✅ DEBUG ROUTE (เช็ค deploy)
-============================== */
-app.get('/__debug', (req, res) => {
-  res.json({
-    status: "ok",
-    message: "Server new version working",
-    time: new Date()
-  });
-});
-
-/* ==============================
-   ✅ API ROUTER
-============================== */
-
+/* =========================
+   ROUTER V1
+========================= */
 const v1Router = express.Router();
 
 const API_INFO = {
@@ -71,32 +70,32 @@ v1Router.get('/version', (req, res) => {
   });
 });
 
-/* ==============================
-   ✅ LEGAL ROUTES (HTML TERMS)
-============================== */
-
+/* =========================
+   CONTROLLERS
+========================= */
 const legalController = require('./controllers/legalController');
+const authController = require('./controllers/authController');
+const deviceController = require('./controllers/deviceController');
+const calculationController = require('./controllers/calculationController');
+const userController = require('./controllers/userController');
+const { authenticateToken } = require('./middlewares/authMiddleware');
 
+/* =========================
+   LEGAL ROUTES
+========================= */
 v1Router.get('/legal/privacy', legalController.getPrivacyPolicy);
 v1Router.get('/legal/terms', legalController.getTermsAndConditions);
 
-/* ==============================
-   ✅ AUTH ROUTES
-============================== */
-
-const authController = require('./controllers/authController');
-
+/* =========================
+   AUTH ROUTES
+========================= */
 v1Router.post('/auth/check-email', authController.checkEmailExists);
 v1Router.post('/auth/register', authController.register);
 v1Router.post('/auth/login', authController.login);
 
-/* ==============================
-   ✅ DEVICE ROUTES
-============================== */
-
-const deviceController = require('./controllers/deviceController');
-const { authenticateToken } = require('./middlewares/authMiddleware');
-
+/* =========================
+   DEVICE ROUTES
+========================= */
 v1Router.get('/device/:serialNumber/lastedRecord', authenticateToken, deviceController.getLatestRecordBySerialNumber);
 v1Router.get('/device/getByDeviceId/:sn', authenticateToken, deviceController.getDeviceById);
 v1Router.get('/device/getBySn/:sn/:userId', authenticateToken, deviceController.getDeviceBySn);
@@ -104,52 +103,45 @@ v1Router.get('/device/:serialNumber/records', authenticateToken, deviceControlle
 v1Router.post('/device/data', authenticateToken, deviceController.addDataRecord);
 v1Router.post('/device-user/assign', authenticateToken, deviceController.assignDeviceToUser);
 v1Router.get('/device-user/devicebyuser/:userId', authenticateToken, deviceController.getDevicesByUserId);
-
 v1Router.get('/device/latestState/:deviceId', authenticateToken, deviceController.getDeviceLatestState);
 v1Router.post('/device/updateDeviceId/:sn/:id', authenticateToken, deviceController.updateDeviceId);
 v1Router.post('/device/updateName/:sn', authenticateToken, deviceController.updateDeviceName);
 v1Router.post('/device/updateDeviceUnit/:sn', authenticateToken, deviceController.updateDeviceUnit);
 v1Router.post('/device/updateDeviceSyncInfo/:deviceId', authenticateToken, deviceController.updateDeviceSyncInfo);
 
-/* ==============================
-   ✅ CALCULATION ROUTES
-============================== */
-
-const calculationController = require('./controllers/calculationController');
+/* =========================
+   CALCULATION ROUTES
+========================= */
 v1Router.get('/calculations/analysis/:val', calculationController.calculationAlgoholValue);
 
-/* ==============================
-   ✅ USER ROUTES
-============================== */
-
-const userController = require('./controllers/userController');
+/* =========================
+   USER ROUTES
+========================= */
 v1Router.get('/user/:id', authenticateToken, userController.getById);
 
-/* ==============================
-   ✅ MOUNT ROUTER
-============================== */
-
+/* =========================
+   MOUNT ROUTER
+========================= */
 app.use('/api/v1', v1Router);
 
-/* ==============================
-   ✅ 404 HANDLER
-============================== */
-
-app.use('*', (req, res) => {
+/* =========================
+   404 HANDLER
+========================= */
+app.use((req, res) => {
   res.status(404).json({
-    status: "error",
+    success: false,
     message: "Endpoint not found",
     path: req.originalUrl
   });
 });
 
-/* ==============================
-   ✅ START SERVER
-============================== */
 
+/* =========================
+   START SERVER
+========================= */
 app.listen(PORT, () => {
-  console.log('--------------------------------------');
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🧪 Debug: /__debug`);
-  console.log('--------------------------------------');
+  console.log(`--------------------------------------`);
+  console.log(`Server running: http://localhost:${PORT}`);
+  console.log(`Version check: http://localhost:${PORT}/api/v1/version`);
+  console.log(`--------------------------------------`);
 });
