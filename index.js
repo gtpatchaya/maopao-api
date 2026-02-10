@@ -24,8 +24,6 @@ app.use(cors({
   maxAge: 86400
 }));
 
-app.options('*', cors());
-
 app.use((req, res, next) => {
   res.header('X-Content-Type-Options', 'nosniff');
   res.header('X-Frame-Options', 'DENY');
