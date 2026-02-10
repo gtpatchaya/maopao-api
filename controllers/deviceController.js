@@ -1,6 +1,6 @@
 const prisma = require('../prismaClient');
 const { successResponse, errorResponse } = require('../utils/response');
-const { v4 } = require('uuid');
+const { v4: uuidv4 } = require('uuid');
 
 const getLatestRecordBySerialNumber = async (req, res, next) => {
   try {
