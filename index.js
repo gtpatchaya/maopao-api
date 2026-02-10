@@ -9,25 +9,37 @@ const PORT = 3000;
 /* =========================
    ✅ CORS CONFIG (ตัวเดียวจบ)
 ========================= */
-const corsOptions = {
-  origin: true,
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'Accept',
-    'Origin',
-    'Cache-Control',
-    'X-File-Name'
-  ],
-  exposedHeaders: ['Content-Length', 'X-Kuma-Revision'],
-  maxAge: 86400
-};
+/* =========================
+   ✅ CORS CONFIG (MANUAL)
+========================= */
+app.use((req, res, next) => {
+  const allowedOrigins = [
+    'http://192.168.1.38:5173',
+    'http://localhost:5173',
+    'https://maopao.site'
+  ];
 
-app.use(cors(corsOptions));
-app.options(/(.*)/, cors(corsOptions));
+  const origin = req.headers.origin;
+
+  // Allow requests from allowed origins or if no origin (tools)
+  if (allowedOrigins.includes(origin) || !origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin || '*');
+  } else {
+    // If not in allowed list, reflect origin anyway for testing purposes (or restrict)
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, X-File-Name');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Expose-Headers', 'Content-Length, X-Kuma-Revision');
+
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+
+  next();
+});
 
 /* =========================
    SECURITY HEADER
