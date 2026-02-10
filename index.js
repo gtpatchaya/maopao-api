@@ -5,7 +5,18 @@ const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = 3000;
 
-app.use(cors());
+app.use(cors({
+  origin: function (origin, callback) {
+    // อนุญาตให้ทุก origin เข้าถึงได้ และรองรับ credentials
+    // origin จะเป็นค่าที่ส่งมาจาก Browser เช่น http://192.168.1.38:5173
+    if (!origin || origin) {
+      callback(null, true);
+    }
+  },
+  credentials: true, // จำเป็นเพราะคุณใช้ cookie-parser
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept']
+}));
 
 app.use(express.json());
 app.use(cookieParser());
