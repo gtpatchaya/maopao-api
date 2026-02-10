@@ -11,7 +11,7 @@ app.use(cookieParser());
 // --- ข้อมูลจำลอง ---
 const API_INFO = {
   name: "MaopaoAPi",
-  version: "1.0.9",
+  version: "1.0.10",
   description: "MaopaoAPi",
   author: "Maopao"
 };
@@ -46,7 +46,7 @@ app.post('/auth/login', authController.login);
 // 4. Device Routes
 const deviceController = require('./controllers/deviceController');
 
-const { authenticateToken } = require('./middlewares/authMiddleware');
+// const { authenticateToken } = require('./middlewares/authMiddleware');
 
 // app.get('/device/:serialNumber/lastedRecord', authenticateToken, deviceController.getLatestRecordBySerialNumber);
 // app.get('/device/getByDeviceId/:sn', authenticateToken, deviceController.getDeviceById);
