@@ -27,9 +27,18 @@ if (!fs.existsSync(logsDir)) {
 const logError = (error, context = '') => {
   const timestamp = new Date().toISOString();
   const logMessage = `[${timestamp}] Error in ${context}: ${error.message}\nStack: ${error.stack}\n\n`;
-  fs.appendFile(path.join(logsDir, 'error.log'), logMessage, (err) => {
-    if (err) console.error('Failed to write to log file:', err);
-  });
+
+  console.error(`[ERROR] ${logMessage}`); // Print to console so we can see it in terminal
+
+  const logPath = path.join(logsDir, 'error.log');
+  console.log(`[DEBUG] Writing error to: ${logPath}`); // Verify path
+
+  try {
+    fs.appendFileSync(logPath, logMessage);
+    console.log('[DEBUG] Write success');
+  } catch (err) {
+    console.error('[ERROR] Failed to write to log file:', err);
+  }
 };
 
 app.get('/version', (req, res) => {
