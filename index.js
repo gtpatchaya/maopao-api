@@ -57,7 +57,6 @@ app.post('/device/data', authenticateToken, deviceController.addDataRecord);
 app.post('/device-user/assign', authenticateToken, deviceController.assignDeviceToUser);
 app.get('/device-user/devicebyuser/:userId', authenticateToken, deviceController.getDevicesByUserId);
 
-ด้านล่างนี้ไม่เกี่ยว
 app.get('/device/latestState/:deviceId', authenticateToken, deviceController.getDeviceLatestState);
 app.post('/device/updateDeviceId/:sn/:id', authenticateToken, deviceController.updateDeviceId);
 app.post('/device/updateName/:sn', authenticateToken, deviceController.updateDeviceName);
