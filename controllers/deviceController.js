@@ -1,6 +1,8 @@
 const prisma = require('../prismaClient');
 const { successResponse, errorResponse } = require('../utils/response');
 const { randomUUID: v4 } = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 const getLatestRecordBySerialNumber = async (req, res, next) => {
   try {
@@ -415,6 +417,17 @@ const getDeviceBySn = async (req, res, next) => {
     const { sn, userId } = req.params;
 
     console.log("getDeviceBySn->", { sn });
+
+    // Log to file
+    try {
+      const logMessage = `[${new Date().toISOString()}] getDeviceBySn - sn: ${sn}, userId: ${userId}\n`;
+      const logPath = path.join(__dirname, '../logs/device_debug.log');
+      fs.appendFile(logPath, logMessage, (err) => {
+        if (err) console.error('Failed to write to log file:', err);
+      });
+    } catch (logErr) {
+      console.error('Logging error:', logErr);
+    }
 
     if (!sn) {
       res.status(400).json(successResponse(400, "Serial number is required", null));
