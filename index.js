@@ -1,8 +1,6 @@
 const express = require('express');
 require('dotenv').config();
 const cookieParser = require('cookie-parser');
-const fs = require('fs');
-const path = require('path');
 const app = express();
 const PORT = 3000;
 
@@ -18,29 +16,6 @@ const API_INFO = {
   author: "Maopao"
 };
 
-// Ensure logs directory exists
-const logsDir = path.join(__dirname, 'logs');
-if (!fs.existsSync(logsDir)) {
-  fs.mkdirSync(logsDir);
-}
-
-const logError = (error, context = '') => {
-  const timestamp = new Date().toISOString();
-  const logMessage = `[${timestamp}] Error in ${context}: ${error.message}\nStack: ${error.stack}\n\n`;
-
-  console.error(`[ERROR] ${logMessage}`); // Print to console so we can see it in terminal
-
-  const logPath = path.join(logsDir, 'error.log');
-  console.log(`[DEBUG] Writing error to: ${logPath}`); // Verify path
-
-  try {
-    fs.appendFileSync(logPath, logMessage);
-    console.log('[DEBUG] Write success');
-  } catch (err) {
-    console.error('[ERROR] Failed to write to log file:', err);
-  }
-};
-
 app.get('/version', (req, res) => {
   try {
     res.json({
@@ -49,7 +24,6 @@ app.get('/version', (req, res) => {
       details: API_INFO
     });
   } catch (error) {
-    logError(error, '/version endpoint');
     res.status(500).json({
       status: "error",
       message: "Internal Server Error",
@@ -58,43 +32,43 @@ app.get('/version', (req, res) => {
   }
 });
 
-// Legal Routes
-const legalController = require('./controllers/legalController');
-app.get('/legal/privacy', legalController.getPrivacyPolicy);
-app.get('/legal/terms', legalController.getTermsAndConditions);
+// // Legal Routes
+// const legalController = require('./controllers/legalController');
+// app.get('/legal/privacy', legalController.getPrivacyPolicy);
+// app.get('/legal/terms', legalController.getTermsAndConditions);
 
-// 3. Auth Routes
-const authController = require('./controllers/authController');
-app.post('/auth/check-email', authController.checkEmailExists);
-app.post('/auth/register', authController.register);
-app.post('/auth/login', authController.login);
+// // 3. Auth Routes
+// const authController = require('./controllers/authController');
+// app.post('/auth/check-email', authController.checkEmailExists);
+// app.post('/auth/register', authController.register);
+// app.post('/auth/login', authController.login);
 
-// 4. Device Routes
-const deviceController = require('./controllers/deviceController');
+// // 4. Device Routes
+// const deviceController = require('./controllers/deviceController');
 
-const { authenticateToken } = require('./middlewares/authMiddleware');
+// const { authenticateToken } = require('./middlewares/authMiddleware');
 
 
-app.get('/device/:serialNumber/lastedRecord', authenticateToken, deviceController.getLatestRecordBySerialNumber);
-app.get('/device/getByDeviceId/:sn', authenticateToken, deviceController.getDeviceById);
-app.get('/device/getBySn/:sn/:userId', authenticateToken, deviceController.getDeviceBySn);
-app.get('/device/:serialNumber/records', authenticateToken, deviceController.getDeviceRecordsBySerialNumber);
-app.post('/device/data', authenticateToken, deviceController.addDataRecord);
-app.post('/device-user/assign', authenticateToken, deviceController.assignDeviceToUser);
-app.get('/device-user/devicebyuser/:userId', authenticateToken, deviceController.getDevicesByUserId);
-app.get('/device/latestState/:deviceId', authenticateToken, deviceController.getDeviceLatestState);
-app.post('/device/updateDeviceId/:sn/:id', authenticateToken, deviceController.updateDeviceId);
-app.post('/device/updateName/:sn', authenticateToken, deviceController.updateDeviceName);
-app.post('/device/updateDeviceUnit/:sn', authenticateToken, deviceController.updateDeviceUnit);
-app.post('/device/updateDeviceSyncInfo/:deviceId', authenticateToken, deviceController.updateDeviceSyncInfo);
+// app.get('/device/:serialNumber/lastedRecord', authenticateToken, deviceController.getLatestRecordBySerialNumber);
+// app.get('/device/getByDeviceId/:sn', authenticateToken, deviceController.getDeviceById);
+// app.get('/device/getBySn/:sn/:userId', authenticateToken, deviceController.getDeviceBySn);
+// app.get('/device/:serialNumber/records', authenticateToken, deviceController.getDeviceRecordsBySerialNumber);
+// app.post('/device/data', authenticateToken, deviceController.addDataRecord);
+// app.post('/device-user/assign', authenticateToken, deviceController.assignDeviceToUser);
+// app.get('/device-user/devicebyuser/:userId', authenticateToken, deviceController.getDevicesByUserId);
+// app.get('/device/latestState/:deviceId', authenticateToken, deviceController.getDeviceLatestState);
+// app.post('/device/updateDeviceId/:sn/:id', authenticateToken, deviceController.updateDeviceId);
+// app.post('/device/updateName/:sn', authenticateToken, deviceController.updateDeviceName);
+// app.post('/device/updateDeviceUnit/:sn', authenticateToken, deviceController.updateDeviceUnit);
+// app.post('/device/updateDeviceSyncInfo/:deviceId', authenticateToken, deviceController.updateDeviceSyncInfo);
 
-// 5. Calculation Routes
-const calculationController = require('./controllers/calculationController');
-app.get('/calculations/analysis/:val', calculationController.calculationAlgoholValue);
+// // 5. Calculation Routes
+// const calculationController = require('./controllers/calculationController');
+// app.get('/calculations/analysis/:val', calculationController.calculationAlgoholValue);
 
-// 6. User Routes
-const userController = require('./controllers/userController');
-app.get('/user/:id', authenticateToken, userController.getById);
+// // 6. User Routes
+// const userController = require('./controllers/userController');
+// app.get('/user/:id', authenticateToken, userController.getById);
 
 // รัน Server
 app.listen(PORT, () => {
