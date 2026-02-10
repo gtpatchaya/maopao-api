@@ -44,13 +44,13 @@ app.post('/auth/register', authController.register);
 app.post('/auth/login', authController.login);
 
 // 4. Device Routes
-// const deviceController = require('./controllers/deviceController');
+const deviceController = require('./controllers/deviceController');
 
-// const { authenticateToken } = require('./middlewares/authMiddleware');
+const { authenticateToken } = require('./middlewares/authMiddleware');
 
+app.get('/device/:serialNumber/lastedRecord', authenticateToken, deviceController.getLatestRecordBySerialNumber);
+app.get('/device/getByDeviceId/:sn', authenticateToken, deviceController.getDeviceById);
 
-// app.get('/device/:serialNumber/lastedRecord', authenticateToken, deviceController.getLatestRecordBySerialNumber);
-// app.get('/device/getByDeviceId/:sn', authenticateToken, deviceController.getDeviceById);
 // app.get('/device/getBySn/:sn/:userId', authenticateToken, deviceController.getDeviceBySn);
 // app.get('/device/:serialNumber/records', authenticateToken, deviceController.getDeviceRecordsBySerialNumber);
 // app.post('/device/data', authenticateToken, deviceController.addDataRecord);
