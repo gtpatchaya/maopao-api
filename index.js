@@ -1,6 +1,8 @@
 const express = require('express');
 require('dotenv').config();
 const cookieParser = require('cookie-parser');
+const fs = require('fs');
+const path = require('path');
 const app = express();
 const PORT = 3000;
 
@@ -16,12 +18,35 @@ const API_INFO = {
   author: "Maopao"
 };
 
-app.get('/version', (req, res) => {
-  res.json({
-    status: "success",
-    apiVersion: API_INFO.version,
-    details: API_INFO
+// Ensure logs directory exists
+const logsDir = path.join(__dirname, 'logs');
+if (!fs.existsSync(logsDir)) {
+  fs.mkdirSync(logsDir);
+}
+
+const logError = (error, context = '') => {
+  const timestamp = new Date().toISOString();
+  const logMessage = `[${timestamp}] Error in ${context}: ${error.message}\nStack: ${error.stack}\n\n`;
+  fs.appendFile(path.join(logsDir, 'error.log'), logMessage, (err) => {
+    if (err) console.error('Failed to write to log file:', err);
   });
+};
+
+app.get('/version', (req, res) => {
+  try {
+    res.json({
+      status: "success",
+      apiVersion: API_INFO.version,
+      details: API_INFO
+    });
+  } catch (error) {
+    logError(error, '/version endpoint');
+    res.status(500).json({
+      status: "error",
+      message: "Internal Server Error",
+      // details: error.message // Hide details in production usually, but maybe useful for debugging here
+    });
+  }
 });
 
 // Legal Routes
