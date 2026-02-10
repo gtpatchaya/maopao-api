@@ -6,6 +6,8 @@ const authenticateToken = (req, res, next) => {
     // Check if authHeader exists and follows Bearer pattern
     const token = authHeader && authHeader.split(' ')[1];
 
+    console.log("authHeader->", { authHeader });
+
     if (!token) {
       return res.status(401).json({
         status: 'error',
