@@ -264,8 +264,6 @@ const getDeviceMutex = (serialNumber) => {
 const addDataRecord = async (req, res, next) => {
   const { serialNumber, timestamp, value, unit, recordNumber } = req.body;
 
-  // 1. ขอ Lock ตาม Serial Number
-  // ถ้ารหัสเดิมยิงมาซ้ำๆ มันจะรอให้คนก่อนหน้าทำเสร็จก่อนเสมอ (แก้ปัญหา Session สลับไปมาหายขาด)
   const mutex = getDeviceMutex(serialNumber);
 
   await mutex.runExclusive(async () => {
@@ -274,7 +272,7 @@ const addDataRecord = async (req, res, next) => {
       const reqTimestamp = reqDateObj.getTime();
 
       // ------------------------------------------------------------------
-      // 2. ดึงข้อมูลล่าสุด (มั่นใจได้ว่าคือล่าสุดจริง เพราะติด Lock อยู่)
+      // 1. ดึง device + latestState
       // ------------------------------------------------------------------
       const device = await prisma.device.findUnique({
         where: { serialNumber },
@@ -286,104 +284,81 @@ const addDataRecord = async (req, res, next) => {
         return;
       }
 
-      // ------------------------------------------------------------------
-      // 3. Logic คำนวณ Session
-      // ------------------------------------------------------------------
       const lastState = device.latestState;
+
       let sessionToSave;
-      let shouldUpdateState = false; // ตัวแปรตัดสินใจว่าจะอัปเดต State ไหม
+      let lastTimestamp = 0;
+      let lastRecordNum = 0;
 
+      // ------------------------------------------------------------------
+      // 2. เช็ค session + เวลา
+      // ------------------------------------------------------------------
       if (!lastState) {
-        // CASE A: ใหม่ซิง -> สร้าง Session ใหม่ + ต้องอัปเดต State แน่นอน
         sessionToSave = v4();
-        shouldUpdateState = true;
       } else {
-        // CASE B: มีข้อมูลเก่า
-        const lastTimestamp = new Date(lastState.timestamp).getTime();
-        const lastRecordNum = lastState.recordNumber;
+        lastTimestamp = new Date(lastState.timestamp).getTime();
+        lastRecordNum = lastState.recordNumber;
 
-        // --- เช็ค Duplicate ---
-        const isSameRecord = recordNumber === lastRecordNum;
-        const isSameTime = reqTimestamp === lastTimestamp;
-
-        if (isSameRecord && isSameTime) {
-          res.status(200).json(successResponse(200, 'Record skipped (identical)', lastState));
-          return; // จบการทำงานใน Lock เลย
+        // ❌ ไม่ใหม่กว่า = ไม่บันทึกอะไรเลย
+        if (reqTimestamp <= lastTimestamp) {
+          res.status(200).json(
+            successResponse(200, 'Record skipped (old or duplicate)', null)
+          );
+          return;
         }
 
-        // Default: ใช้ Session เดิม
+        // default session เดิม
         sessionToSave = lastState.sessionId;
 
-        // --- Logic Rollover และ New Session ---
-        // เช็คว่าข้อมูล "ใหม่กว่า" ข้อมูลล่าสุดใน DB หรือไม่?
-        if (reqTimestamp > lastTimestamp) {
-          // ถ้าใหม่กว่า -> อนุญาตให้อัปเดต State ได้
-          shouldUpdateState = true;
-
-          // เงื่อนไข Rollover: เวลาเดินหน้า แต่เลข record ถอยหลัง -> ขึ้น Session ใหม่
-          if (recordNumber < lastRecordNum) {
-            sessionToSave = v4();
-          }
-        } else {
-          // ถ้าข้อมูล "เก่ากว่าหรือเท่ากับ" (Out of order packet)
-          // เราจะบันทึก History แต่ "ห้าม" อัปเดต State ย้อนหลัง
-          // และใช้ Session ID เดิมเพื่อให้ข้อมูลเกาะกลุ่มกัน
-          shouldUpdateState = false;
+        // rollover
+        if (recordNumber < lastRecordNum) {
+          sessionToSave = v4();
         }
       }
 
       // ------------------------------------------------------------------
-      // 4. Save Data (Transaction)
+      // 3. Transaction (บันทึกเฉพาะใหม่กว่าเท่านั้น)
       // ------------------------------------------------------------------
-      if (shouldUpdateState) {
-        const operations = [
-          // 4.1 Insert History เสมอ (ไม่ว่าจะเก่าหรือใหม่)
-          prisma.dataRecord.create({
-            data: {
-              deviceId: device.id,
-              timestamp: reqDateObj,
-              value: +value,
-              unit: unit.toString(),
-              recordNumber: +recordNumber,
-              serialNumber: serialNumber,
-              sessionId: sessionToSave,
-              time_text: timestamp || ""
-            },
-          })
-        ];
+      const results = await prisma.$transaction([
+        prisma.dataRecord.create({
+          data: {
+            deviceId: device.id,
+            timestamp: reqDateObj,
+            value: +value,
+            unit: unit.toString(),
+            recordNumber: +recordNumber,
+            serialNumber: serialNumber,
+            sessionId: sessionToSave,
+            time_text: timestamp || ""
+          },
+        }),
 
-        // 4.2 Upsert State (ทำเฉพาะเมื่อข้อมูลใหม่กว่าเดิมเท่านั้น!)
+        prisma.deviceLatestState.upsert({
+          where: { deviceId: device.id },
+          update: {
+            timestamp: reqDateObj,
+            recordNumber: +recordNumber,
+            sessionId: sessionToSave
+          },
+          create: {
+            deviceId: device.id,
+            timestamp: reqDateObj,
+            recordNumber: +recordNumber,
+            sessionId: sessionToSave
+          },
+        })
+      ]);
 
-        operations.push(
-          prisma.deviceLatestState.upsert({
-            where: { deviceId: device.id },
-            update: {
-              timestamp: reqDateObj,
-              recordNumber: +recordNumber,
-              sessionId: sessionToSave
-            },
-            create: {
-              deviceId: device.id,
-              timestamp: reqDateObj,
-              recordNumber: +recordNumber,
-              sessionId: sessionToSave
-            },
-          })
-        );
-      }
-
-      // Execute Transaction
-      const results = await prisma.$transaction(operations);
-
-      // results[0] คือ dataRecord ที่เพิ่งสร้าง
-      res.status(200).json(successResponse(200, 'Record added successfully', results[0]));
+      res.status(200).json(
+        successResponse(200, 'Record added successfully', results[0])
+      );
 
     } catch (error) {
-      // ส่ง Error ออกไปให้ Middleware จัดการ (และ Lock จะถูกปลดอัตโนมัติ)
       throw error;
     }
-  }).catch(next); // Catch error ที่โยนมาจากใน mutex
+  }).catch(next);
 };
+
 
 const getDeviceById = async (req, res, next) => {
   try {
