@@ -1,6 +1,7 @@
 const prisma = require('../prismaClient');
 const { successResponse, errorResponse } = require('../utils/response');
 const { randomUUID: v4 } = require('crypto');
+const { Mutex } = require('async-mutex'); // Import Mutex
 
 const getLatestRecordBySerialNumber = async (req, res, next) => {
   try {
@@ -248,11 +249,6 @@ const getDeviceRecordsBySerialNumber = async (req, res, next) => {
 };
 
 
-const { PrismaClient } = require('@prisma/client');
-const { v4 } = require('uuid');
-const { Mutex } = require('async-mutex'); // Import Mutex
-
-const prisma = new PrismaClient();
 
 // สร้าง Map เพื่อเก็บ Mutex แยกตาม Serial Number
 // เพื่อให้ Device A ไม่ต้องไปรอคิว Device B (รอแค่ตัวเอง)
@@ -387,13 +383,6 @@ const addDataRecord = async (req, res, next) => {
     }
   }).catch(next); // Catch error ที่โยนมาจากใน mutex
 };
-
-// Helper response function (สมมติว่าคุณมีอยู่แล้ว)
-const successResponse = (code, message, data) => {
-  return { code, message, data };
-};
-
-
 
 const getDeviceById = async (req, res, next) => {
   try {
