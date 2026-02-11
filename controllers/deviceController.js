@@ -248,114 +248,151 @@ const getDeviceRecordsBySerialNumber = async (req, res, next) => {
 };
 
 
+const { PrismaClient } = require('@prisma/client');
+const { v4 } = require('uuid');
+const { Mutex } = require('async-mutex'); // Import Mutex
+
+const prisma = new PrismaClient();
+
+// สร้าง Map เพื่อเก็บ Mutex แยกตาม Serial Number
+// เพื่อให้ Device A ไม่ต้องไปรอคิว Device B (รอแค่ตัวเอง)
+const deviceMutexes = new Map();
+
+const getDeviceMutex = (serialNumber) => {
+  if (!deviceMutexes.has(serialNumber)) {
+    deviceMutexes.set(serialNumber, new Mutex());
+  }
+  return deviceMutexes.get(serialNumber);
+};
+
 const addDataRecord = async (req, res, next) => {
-  try {
-    const { serialNumber, timestamp, value, unit, recordNumber } = req.body;
-    // แปลงเวลาให้เป็น Date Object เตรียมไว้ (ใช้ได้ทั้ง Logic และ Save)
-    const reqDateObj = new Date(timestamp);
-    const reqTimestamp = reqDateObj.getTime();
+  const { serialNumber, timestamp, value, unit, recordNumber } = req.body;
 
-    // ------------------------------------------------------------------
-    // 1. Validate Device + ดึง State ล่าสุด (แก้ไขจุดนี้)
-    // ------------------------------------------------------------------
-    // เดิม: findUnique device แล้วค่อยไป findFirst dataRecord (ช้า)
-    // ใหม่: include: { latestState: true } อ่านทีเดียวได้ครบ (เร็วมาก)
-    const device = await prisma.device.findUnique({
-      where: { serialNumber },
-      include: { latestState: true },
-    });
+  // 1. ขอ Lock ตาม Serial Number
+  // ถ้ารหัสเดิมยิงมาซ้ำๆ มันจะรอให้คนก่อนหน้าทำเสร็จก่อนเสมอ (แก้ปัญหา Session สลับไปมาหายขาด)
+  const mutex = getDeviceMutex(serialNumber);
 
-    if (!device) {
-      res.status(404).json(successResponse(404, 'Device not found', null));
-      return;
-    }
+  await mutex.runExclusive(async () => {
+    try {
+      const reqDateObj = new Date(timestamp);
+      const reqTimestamp = reqDateObj.getTime();
 
-    // ------------------------------------------------------------------
-    // 2. Logic คำนวณ Session (เปลี่ยนแหล่งข้อมูล)
-    // ------------------------------------------------------------------
-    // ใช้ข้อมูลจากตารางเล็ก (DeviceLatestState) แทนตารางประวัติ (DataRecord)
-    const lastState = device.latestState;
-    let sessionToSave;
+      // ------------------------------------------------------------------
+      // 2. ดึงข้อมูลล่าสุด (มั่นใจได้ว่าคือล่าสุดจริง เพราะติด Lock อยู่)
+      // ------------------------------------------------------------------
+      const device = await prisma.device.findUnique({
+        where: { serialNumber },
+        include: { latestState: true },
+      });
 
-    if (!lastState) {
-      // CASE A: ยังไม่เคยมีข้อมูลเลย -> สร้าง Session ใหม่
-      sessionToSave = v4();
-    } else {
-      // CASE B: มีข้อมูลเก่า
-      const lastTimestamp = new Date(lastState.timestamp).getTime();
-      const lastRecordNum = lastState.recordNumber;
+      if (!device) {
+        res.status(404).json(successResponse(404, 'Device not found', null));
+        return;
+      }
 
-      // --- เช็ค Duplicate (แบบฉลาดขึ้น) ---
-      if (lastState) {
-        const isSameRecord = recordNumber === lastState.recordNumber;
-        const isSameTime = reqTimestamp === new Date(lastState.timestamp).getTime();
+      // ------------------------------------------------------------------
+      // 3. Logic คำนวณ Session
+      // ------------------------------------------------------------------
+      const lastState = device.latestState;
+      let sessionToSave;
+      let shouldUpdateState = false; // ตัวแปรตัดสินใจว่าจะอัปเดต State ไหม
 
-        // จะข้าม (Skip) ก็ต่อเมื่อ "เลขเดิม" และ "เวลาเดิม" เท่านั้น
+      if (!lastState) {
+        // CASE A: ใหม่ซิง -> สร้าง Session ใหม่ + ต้องอัปเดต State แน่นอน
+        sessionToSave = v4();
+        shouldUpdateState = true;
+      } else {
+        // CASE B: มีข้อมูลเก่า
+        const lastTimestamp = new Date(lastState.timestamp).getTime();
+        const lastRecordNum = lastState.recordNumber;
+
+        // --- เช็ค Duplicate ---
+        const isSameRecord = recordNumber === lastRecordNum;
+        const isSameTime = reqTimestamp === lastTimestamp;
+
         if (isSameRecord && isSameTime) {
           res.status(200).json(successResponse(200, 'Record skipped (identical)', lastState));
-          return;
+          return; // จบการทำงานใน Lock เลย
+        }
+
+        // Default: ใช้ Session เดิม
+        sessionToSave = lastState.sessionId;
+
+        // --- Logic Rollover และ New Session ---
+        // เช็คว่าข้อมูล "ใหม่กว่า" ข้อมูลล่าสุดใน DB หรือไม่?
+        if (reqTimestamp > lastTimestamp) {
+          // ถ้าใหม่กว่า -> อนุญาตให้อัปเดต State ได้
+          shouldUpdateState = true;
+
+          // เงื่อนไข Rollover: เวลาเดินหน้า แต่เลข record ถอยหลัง -> ขึ้น Session ใหม่
+          if (recordNumber < lastRecordNum) {
+            sessionToSave = v4();
+          }
+        } else {
+          // ถ้าข้อมูล "เก่ากว่าหรือเท่ากับ" (Out of order packet)
+          // เราจะบันทึก History แต่ "ห้าม" อัปเดต State ย้อนหลัง
+          // และใช้ Session ID เดิมเพื่อให้ข้อมูลเกาะกลุ่มกัน
+          shouldUpdateState = false;
         }
       }
 
-      // Default: ใช้ Session เดิม
-      sessionToSave = lastState.sessionId;
+      // ------------------------------------------------------------------
+      // 4. Save Data (Transaction)
+      // ------------------------------------------------------------------
+      const operations = [
+        // 4.1 Insert History เสมอ (ไม่ว่าจะเก่าหรือใหม่)
+        prisma.dataRecord.create({
+          data: {
+            deviceId: device.id,
+            timestamp: reqDateObj,
+            value: +value,
+            unit: unit.toString(),
+            recordNumber: +recordNumber,
+            serialNumber: serialNumber,
+            sessionId: sessionToSave,
+            time_text: timestamp || ""
+          },
+        })
+      ];
 
-      // เช็คว่าข้อมูลใหม่กว่าข้อมูลล่าสุดหรือไม่
-      if (reqTimestamp > lastTimestamp) {
-        // เงื่อนไข Rollover: เลข record น้อยลง (เช่น 1000 -> 1) -> ขึ้น Session ใหม่
-        if (recordNumber < lastRecordNum) {
-          sessionToSave = v4();
-        }
+      // 4.2 Upsert State (ทำเฉพาะเมื่อข้อมูลใหม่กว่าเดิมเท่านั้น!)
+      if (shouldUpdateState) {
+        operations.push(
+          prisma.deviceLatestState.upsert({
+            where: { deviceId: device.id },
+            update: {
+              timestamp: reqDateObj,
+              recordNumber: +recordNumber,
+              sessionId: sessionToSave
+            },
+            create: {
+              deviceId: device.id,
+              timestamp: reqDateObj,
+              recordNumber: +recordNumber,
+              sessionId: sessionToSave
+            },
+          })
+        );
       }
-      // Note: ถ้าเป็นข้อมูลย้อนหลัง เราจะใช้ session เดิมเพื่อให้เกาะกลุ่มกัน
+
+      // Execute Transaction
+      const results = await prisma.$transaction(operations);
+
+      // results[0] คือ dataRecord ที่เพิ่งสร้าง
+      res.status(200).json(successResponse(200, 'Record added successfully', results[0]));
+
+    } catch (error) {
+      // ส่ง Error ออกไปให้ Middleware จัดการ (และ Lock จะถูกปลดอัตโนมัติ)
+      throw error;
     }
-
-    // ------------------------------------------------------------------
-    // 3. Save Data (แก้ไขเป็น Transaction)
-    // ------------------------------------------------------------------
-    // เราต้องทำ 2 อย่างพร้อมกัน: 
-    // 1. เก็บลง History (DataRecord) 
-    // 2. อัปเดตค่าล่าสุด (DeviceLatestState)
-    const [record, updatedState] = await prisma.$transaction([
-
-      // 3.1 Insert History
-      prisma.dataRecord.create({
-        data: {
-          deviceId: device.id,
-          timestamp: reqDateObj,
-          value: +value,
-          unit: unit.toString(),
-          recordNumber: +recordNumber,
-          serialNumber: serialNumber,
-          sessionId: sessionToSave,
-          time_text: timestamp || ""
-        },
-      }),
-
-      // 3.2 Upsert State (ของใหม่)
-      // ถ้ามีอยู่แล้วให้ update, ถ้าไม่มีให้ create
-      prisma.deviceLatestState.upsert({
-        where: { deviceId: device.id },
-        update: {
-          timestamp: reqDateObj,
-          recordNumber: +recordNumber,
-          sessionId: sessionToSave
-        },
-        create: {
-          deviceId: device.id,
-          timestamp: reqDateObj,
-          recordNumber: +recordNumber,
-          sessionId: sessionToSave
-        },
-      }),
-    ]);
-
-    res.status(200).json(successResponse(200, 'Record added successfully', record));
-
-  } catch (error) {
-    next(error);
-  }
+  }).catch(next); // Catch error ที่โยนมาจากใน mutex
 };
+
+// Helper response function (สมมติว่าคุณมีอยู่แล้ว)
+const successResponse = (code, message, data) => {
+  return { code, message, data };
+};
+
 
 
 const getDeviceById = async (req, res, next) => {
