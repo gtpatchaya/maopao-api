@@ -262,7 +262,7 @@ const getDeviceMutex = (serialNumber) => {
 };
 
 const addDataRecord = async (req, res, next) => {
-  const { serialNumber, timestamp, value, unit, recordNumber } = req.body;
+  const { serialNumber, timestamp, value, unit, recordNumber, buffer } = req.body;
 
   const mutex = getDeviceMutex(serialNumber);
 
@@ -329,7 +329,8 @@ const addDataRecord = async (req, res, next) => {
             recordNumber: +recordNumber,
             serialNumber: serialNumber,
             sessionId: sessionToSave,
-            time_text: timestamp || ""
+            time_text: timestamp || "",
+            buffer: buffer || ""
           },
         }),
 

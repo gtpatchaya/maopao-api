@@ -38,6 +38,7 @@ model Device {
   isSyncInfo  Boolean            @default(false)
   deletedAt   DateTime?
   latestState DeviceLatestState?
+  buffer      String?            @default("")
 }
 
 model DataRecord {
