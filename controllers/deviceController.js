@@ -335,24 +335,25 @@ const addDataRecord = async (req, res, next) => {
       // ------------------------------------------------------------------
       // 4. Save Data (Transaction)
       // ------------------------------------------------------------------
-      const operations = [
-        // 4.1 Insert History เสมอ (ไม่ว่าจะเก่าหรือใหม่)
-        prisma.dataRecord.create({
-          data: {
-            deviceId: device.id,
-            timestamp: reqDateObj,
-            value: +value,
-            unit: unit.toString(),
-            recordNumber: +recordNumber,
-            serialNumber: serialNumber,
-            sessionId: sessionToSave,
-            time_text: timestamp || ""
-          },
-        })
-      ];
-
-      // 4.2 Upsert State (ทำเฉพาะเมื่อข้อมูลใหม่กว่าเดิมเท่านั้น!)
       if (shouldUpdateState) {
+        const operations = [
+          // 4.1 Insert History เสมอ (ไม่ว่าจะเก่าหรือใหม่)
+          prisma.dataRecord.create({
+            data: {
+              deviceId: device.id,
+              timestamp: reqDateObj,
+              value: +value,
+              unit: unit.toString(),
+              recordNumber: +recordNumber,
+              serialNumber: serialNumber,
+              sessionId: sessionToSave,
+              time_text: timestamp || ""
+            },
+          })
+        ];
+
+        // 4.2 Upsert State (ทำเฉพาะเมื่อข้อมูลใหม่กว่าเดิมเท่านั้น!)
+
         operations.push(
           prisma.deviceLatestState.upsert({
             where: { deviceId: device.id },
