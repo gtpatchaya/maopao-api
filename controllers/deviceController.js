@@ -222,7 +222,7 @@ const getDeviceRecordsBySerialNumber = async (req, res, next) => {
         sessionId: { not: '' },
         timeUpdate: { lt: maxDate } // กรองวันที่ตรงนี้
       },
-      orderBy: [{ timestamp: "desc" }],
+      orderBy: [{ timeUpdate: "desc" }],
       select: { sessionId: true }
     });
 
@@ -238,7 +238,7 @@ const getDeviceRecordsBySerialNumber = async (req, res, next) => {
         sessionId: latestSessionRecord.sessionId,
         timeUpdate: { lt: maxDate } // กรองวันที่ย้ำอีกครั้งเพื่อความชัวร์
       },
-      orderBy: { timeUpdate: "desc" }
+      orderBy: { timestamp: "desc" }
     });
 
     res.status(200).json(successResponse(200, "Success", records));
