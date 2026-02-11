@@ -64,7 +64,7 @@ const v1Router = express.Router();
 
 const API_INFO = {
   name: "MaopaoAPi",
-  version: "1.0.10",
+  version: "1.0.11",
   description: "MaopaoAPi",
   author: "Maopao"
 };
