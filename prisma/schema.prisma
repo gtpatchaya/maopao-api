@@ -38,7 +38,6 @@ model Device {
   isSyncInfo  Boolean            @default(false)
   deletedAt   DateTime?
   latestState DeviceLatestState?
-  buffer      String?            @default("")
 }
 
 model DataRecord {
@@ -54,6 +53,7 @@ model DataRecord {
   sessionId    String   @default("")
   time_text    String   @default("") // for display
   timeUpdate   DateTime @default(now())
+  buffer       String?  @default("")
 }
 
 model User {
