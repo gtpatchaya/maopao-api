@@ -58,6 +58,12 @@ app.use(express.json());
 app.use(cookieParser());
 
 /* =========================
+   LOGGING MIDDLEWARE (ON/OFF via ENABLE_REQUEST_LOGGING)
+========================= */
+const logMiddleware = require('./middlewares/logMiddleware');
+app.use(logMiddleware);
+
+/* =========================
    ROUTER V1
 ========================= */
 const v1Router = express.Router();

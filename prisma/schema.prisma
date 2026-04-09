@@ -130,3 +130,17 @@ model DeviceLatestState {
 
   updatedAt DateTime @updatedAt // อัปเดตอัตโนมัติเมื่อมีข้อมูลใหม่เข้า
 }
+
+model RequestLog {
+  id        Int      @id @default(autoincrement())
+  method    String
+  url       String
+  headers   String?  @db.Text
+  body      String?  @db.Text
+  query     String?  @db.Text
+  ip        String?
+  userId    String?
+  statusCode Int?
+  duration  Int?     // milliseconds
+  createdAt DateTime @default(now())
+}
