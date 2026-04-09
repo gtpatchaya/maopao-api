@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promotion Management - MAOPAO</title>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+        }
+
+        body {
+            font-family: 'Kanit', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 0;
+        }
+
+        .login-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .login-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            width: 350px;
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.3);
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            display: none; /* Hidden by default */
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        h1 { margin: 0; color: var(--primary); }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 10px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1.1em;
+            cursor: pointer;
+            color: #64748b;
+            font-weight: 500;
+            position: relative;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+        }
+
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-card {
+            background: var(--card);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            margin-bottom: 30px;
+        }
+
+        .grid-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .full-width { grid-column: span 2; }
+
+        .file-input-group {
+            display: flex;
+            gap: 10px;
+        }
+
+        input, textarea, select {
+            padding: 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            background: white;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.9; }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-ghost { background: #e2e8f0; color: var(--text); }
+
+        .list-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .item-card {
+            background: var(--card);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .item-preview {
+            width: 100%;
+            height: 150px;
+            background: #e2e8f0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+        }
+
+        .item-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .item-content { padding: 15px; flex-grow: 1; }
+        .item-title { font-weight: 500; font-size: 1.1em; margin-bottom: 5px; }
+        .item-desc { font-size: 0.9em; color: #64748b; margin-bottom: 15px; }
+
+        .badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .badge-active { background: #dcfce7; color: #166534; }
+        .badge-inactive { background: #fee2e2; color: #991b1b; }
+        .badge-type {
+            top: unset;
+            bottom: 150px;
+            background: rgba(0,0,0,0.6);
+            color: white;
+            padding: 2px 6px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            margin-top: auto;
+        }
+
+        .actions button { flex: 1; padding: 6px; font-size: 0.9em; }
+
+    </style>
+</head>
+<body>
+
+<div id="login-view" class="login-overlay">
+    <div class="login-card">
+        <h2 style="margin-top:0; text-align:center">MAOPAO Admin</h2>
+        <div style="margin-bottom:15px">
+            <label>Email</label>
+            <input type="email" id="login-email" value="admin@mail.com">
+        </div>
+        <div style="margin-bottom:20px">
+            <label>Password</label>
+            <input type="password" id="login-pass" value="pass@1234">
+        </div>
+        <button class="btn-primary" style="width:100%" onclick="login()">เข้าสู่ระบบ</button>
+    </div>
+</div>
+
+<div class="container" id="admin-view">
+    <header>
+        <h1>จัดการเนื้อหาแดชบอร์ด</h1>
+        <div>
+            <span id="admin-name" style="margin-right:20px; font-weight:500">Admin</span>
+            <button class="btn-ghost" onclick="logout()">ออกจากระบบ</button>
+        </div>
+    </header>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('promotion')">โปรโมชั่น (Promotion)</button>
+        <button class="tab-btn" onclick="switchTab('tutorial')">วิธีการใช้งาน (Tutorials)</button>
+    </div>
+
+    <!-- ================= PROMOTION TAB ================= -->
+    <div id="tab-promotion" class="tab-content active">
+        <div class="form-card">
+            <h3 id="promo-form-title">เพิ่มโปรโมชั่นใหม่</h3>
+            <input type="hidden" id="edit-promo-id">
+            <div class="grid-form">
+                <div>
+                    <label>หัวข้อโปรโมชั่น</label>
+                    <input type="text" id="promo-title" placeholder="เช่น โปรโมชั่นลด 20%">
+                </div>
+                <div>
+                    <label>รูปภาพโปรโมชั่น</label>
+                    <div class="file-input-group">
+                        <input type="text" id="promo-image" placeholder="ลิงก์รูปภาพ หรืออัปโหลดใหม่">
+                        <input type="file" id="promo-file-input" style="display:none" onchange="handleFileUpload(this, 'promo-image')">
+                        <button class="btn-primary" onclick="document.getElementById('promo-file-input').click()">อัปโหลด</button>
+                    </div>
+                </div>
+                <div class="full-width">
+                    <label>คำอธิบาย</label>
+                    <textarea id="promo-desc" rows="3" placeholder="รายละเอียดโปรโมชั่น..."></textarea>
+                </div>
+                <div>
+                    <label>ลิงก์ไปยังหน้ารายละเอียด (URL)</label>
+                    <input type="text" id="promo-link" placeholder="https://...">
+                </div>
+                <div>
+                    <label>สถานะ</label>
+                    <select id="promo-active">
+                        <option value="true">ใช้งาน (Active)</option>
+                        <option value="false">ปิดใช้งาน (Inactive)</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn-success" onclick="savePromotion()">บันทึกข้อมูล</button>
+                <button class="btn-ghost" id="btn-cancel-promo" onclick="resetPromoForm()" style="display:none;">ยกเลิก</button>
+            </div>
+        </div>
+        <div class="list-grid" id="promo-list"></div>
+    </div>
+
+    <!-- ================= TUTORIAL TAB ================= -->
+    <div id="tab-tutorial" class="tab-content">
+        <div class="form-card">
+            <h3 id="tut-form-title">เพิ่มวิธีการใช้งานใหม่</h3>
+            <input type="hidden" id="edit-tut-id">
+            <div class="grid-form">
+                <div>
+                    <label>หัวข้อ/ชื่อคลิป/ชื่อไฟล์</label>
+                    <input type="text" id="tut-title" placeholder="เช่น วิธีการเป่าวัดแอลกอฮอล์">
+                </div>
+                <div>
+                    <label>ประเภทเนื้อหา</label>
+                    <select id="tut-type">
+                        <option value="video">วิดีโอ (Video Clip)</option>
+                        <option value="pdf">เอกสาร (PDF File)</option>
+                    </select>
+                </div>
+                <div class="full-width">
+                    <label>ไฟล์เนื้อหา (Video/PDF URL)</label>
+                    <div class="file-input-group">
+                        <input type="text" id="tut-file-url" placeholder="ลิงก์ไฟล์ หรืออัปโหลดใหม่">
+                        <input type="file" id="tut-file-input" style="display:none" onchange="handleFileUpload(this, 'tut-file-url')">
+                        <button class="btn-primary" onclick="document.getElementById('tut-file-input').click()">อัปโหลดไฟล์</button>
+                    </div>
+                </div>
+                <div class="full-width">
+                    <label>รูปพรีวิว (Thumbnail URL) - เฉพาะวิดีโอ</label>
+                    <div class="file-input-group">
+                        <input type="text" id="tut-thumbnail-url" placeholder="ลิงก์รูปภาพ หรืออัปโหลดใหม่">
+                        <input type="file" id="tut-thumb-input" style="display:none" onchange="handleFileUpload(this, 'tut-thumbnail-url')">
+                        <button class="btn-primary" onclick="document.getElementById('tut-thumb-input').click()">อัปโหลดพรีวิว</button>
+                    </div>
+                </div>
+                <div class="full-width">
+                    <label>คำอธิบายเพิ่มเติม</label>
+                    <textarea id="tut-desc" rows="3" placeholder="รายละเอียดสั้นๆ..."></textarea>
+                </div>
+                <div>
+                    <label>สถานะการแสดงผล</label>
+                    <select id="tut-active">
+                        <option value="true">แสดง (Active)</option>
+                        <option value="false">บันทึกร่าง (Inactive)</option>
+                    </select>
+                </div>
+            </div>
+            <div style="margin-top: 20px; display: flex; gap: 10px;">
+                <button class="btn-success" onclick="saveTutorial()">บันทึกข้อมูล</button>
+                <button class="btn-ghost" id="btn-cancel-tut" onclick="resetTutForm()" style="display:none;">ยกเลิก</button>
+            </div>
+        </div>
+        <div class="list-grid" id="tut-list"></div>
+    </div>
+</div>
+
+<script>
+    const API_BASE = '/api/v1';
+    let accessToken = localStorage.getItem('adminToken');
+
+    function checkAuth() {
+        if (accessToken) {
+            document.getElementById('login-view').style.display = 'none';
+            document.getElementById('admin-view').style.display = 'block';
+            loadPromotions();
+            loadTutorials();
+        } else {
+            document.getElementById('login-view').style.display = 'flex';
+            document.getElementById('admin-view').style.display = 'none';
+        }
+    }
+
+    async function login() {
+        const email = document.getElementById('login-email').value;
+        const password = document.getElementById('login-pass').value;
+        try {
+            const res = await fetch(`${API_BASE}/auth/admin-login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            const json = await res.json();
+            if (json.status === 'success') {
+                accessToken = json.data.accessToken;
+                localStorage.setItem('adminToken', accessToken);
+                checkAuth();
+            } else { alert(json.message); }
+        } catch (e) { alert('Login failed'); }
+    }
+
+    function logout() {
+        localStorage.removeItem('adminToken');
+        accessToken = null;
+        checkAuth();
+    }
+
+    function switchTab(tab) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+        
+        event.target.classList.add('active');
+        document.getElementById(`tab-${tab}`).classList.add('active');
+    }
+
+    // Generic File Upload Handler
+    async function handleFileUpload(input, targetId) {
+        if (!input.files || !input.files[0]) return;
+        
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('file', file); // Use 'file' as defined in index.js
+
+        const btn = input.nextElementSibling;
+        const originalText = btn.innerText;
+        btn.innerText = 'Uploading...';
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(`${API_BASE}/upload`, {
+                method: 'POST',
+                body: formData
+            });
+            const json = await res.json();
+            if (json.status === 'success') {
+                document.getElementById(targetId).value = json.data.url;
+            } else { alert(json.message); }
+        } catch (e) { alert('Upload failed'); } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+        }
+    }
+
+    /* ================= PROMOTION LOGIC ================= */
+    async function loadPromotions() {
+        try {
+            const res = await fetch(`${API_BASE}/promotions`);
+            const json = await res.json();
+            const list = document.getElementById('promo-list');
+            list.innerHTML = '';
+            json.data.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                card.innerHTML = `
+                    <span class="badge ${p.isActive ? 'badge-active' : 'badge-inactive'}">${p.isActive ? 'Active' : 'Inactive'}</span>
+                    <div class="item-preview">
+                        <img src="${p.imageUrl || 'https://via.placeholder.com/300x150'}" alt="promo">
+                    </div>
+                    <div class="item-content">
+                        <div class="item-title">${p.title}</div>
+                        <div class="item-desc">${p.description || '-'}</div>
+                        <div class="actions">
+                            <button class="btn-primary" onclick='editPromo(${JSON.stringify(p).replace(/'/g, "&apos;")})'>แก้ไข</button>
+                            <button class="btn-danger" onclick="deletePromo(${p.id})">ลบ</button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        } catch (e) {}
+    }
+
+    async function savePromotion() {
+        const id = document.getElementById('edit-promo-id').value;
+        const data = {
+            title: document.getElementById('promo-title').value,
+            description: document.getElementById('promo-desc').value,
+            imageUrl: document.getElementById('promo-image').value,
+            linkUrl: document.getElementById('promo-link').value,
+            isActive: document.getElementById('promo-active').value === 'true'
+        };
+        if (!data.title) return alert('ใส่หัวข้อด้วย');
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_BASE}/promotions/${id}` : `${API_BASE}/promotions`;
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) { resetPromoForm(); loadPromotions(); alert('Success'); }
+            else { alert('Save failed'); }
+        } catch (e) { alert('Error'); }
+    }
+
+    function editPromo(p) {
+        document.getElementById('promo-form-title').innerText = 'แก้ไขโปรโมชั่น ID: ' + p.id;
+        document.getElementById('edit-promo-id').value = p.id;
+        document.getElementById('promo-title').value = p.title;
+        document.getElementById('promo-desc').value = p.description;
+        document.getElementById('promo-image').value = p.imageUrl;
+        document.getElementById('promo-link').value = p.linkUrl;
+        document.getElementById('promo-active').value = p.isActive.toString();
+        document.getElementById('btn-cancel-promo').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function deletePromo(id) {
+        if (!confirm('Delete?')) return;
+        try {
+            await fetch(`${API_BASE}/promotions/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${accessToken}` } });
+            loadPromotions();
+        } catch (e) {}
+    }
+
+    function resetPromoForm() {
+        document.getElementById('promo-form-title').innerText = 'เพิ่มโปรโมชั่นใหม่';
+        document.getElementById('edit-promo-id').value = '';
+        document.getElementById('promo-title').value = '';
+        document.getElementById('promo-desc').value = '';
+        document.getElementById('promo-image').value = '';
+        document.getElementById('promo-link').value = '';
+        document.getElementById('btn-cancel-promo').style.display = 'none';
+    }
+
+    /* ================= TUTORIAL LOGIC ================= */
+    async function loadTutorials() {
+        try {
+            const res = await fetch(`${API_BASE}/tutorials`);
+            const json = await res.json();
+            const list = document.getElementById('tut-list');
+            list.innerHTML = '';
+            json.data.forEach(t => {
+                const card = document.createElement('div');
+                card.className = 'item-card';
+                const fileIcon = t.type === 'video' ? '🎬' : '📄';
+                card.innerHTML = `
+                    <span class="badge ${t.isActive ? 'badge-active' : 'badge-inactive'}">${t.isActive ? 'Active' : 'Draft'}</span>
+                    <span class="badge badge-type">${t.type.toUpperCase()}</span>
+                    <div class="item-preview">${fileIcon}</div>
+                    <div class="item-content">
+                        <div class="item-title">${t.title}</div>
+                        <div class="item-desc">${t.description || '-'}</div>
+                        <div class="actions">
+                            <button class="btn-primary" onclick='editTut(${JSON.stringify(t).replace(/'/g, "&apos;")})'>แก้ไข</button>
+                            <button class="btn-danger" onclick="deleteTut(${t.id})">ลบ</button>
+                        </div>
+                    </div>
+                `;
+                list.appendChild(card);
+            });
+        } catch (e) {}
+    }
+
+    async function saveTutorial() {
+        const id = document.getElementById('edit-tut-id').value;
+        const data = {
+            title: document.getElementById('tut-title').value,
+            description: document.getElementById('tut-desc').value,
+            type: document.getElementById('tut-type').value,
+            fileUrl: document.getElementById('tut-file-url').value,
+            thumbnailUrl: document.getElementById('tut-thumbnail-url').value,
+            isActive: document.getElementById('tut-active').value === 'true'
+        };
+        if (!data.title || !data.fileUrl) return alert('ใส่หัวข้อและไฟล์ด้วย');
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? `${API_BASE}/tutorials/${id}` : `${API_BASE}/tutorials`;
+        try {
+            const res = await fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${accessToken}` },
+                body: JSON.stringify(data)
+            });
+            if (res.ok) { resetTutForm(); loadTutorials(); alert('Saved Tutorial'); }
+            else { alert('Save failed'); }
+        } catch (e) {}
+    }
+
+    function editTut(t) {
+        document.getElementById('tut-form-title').innerText = 'แก้ไขวิธีการใช้งาน ID: ' + t.id;
+        document.getElementById('edit-tut-id').value = t.id;
+        document.getElementById('tut-title').value = t.title;
+        document.getElementById('tut-desc').value = t.description;
+        document.getElementById('tut-type').value = t.type;
+        document.getElementById('tut-file-url').value = t.fileUrl;
+        document.getElementById('tut-thumbnail-url').value = t.thumbnailUrl || '';
+        document.getElementById('tut-active').value = t.isActive.toString();
+        document.getElementById('btn-cancel-tut').style.display = 'block';
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function deleteTut(id) {
+        if (!confirm('Delete?')) return;
+        try {
+            await fetch(`${API_BASE}/tutorials/${id}`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${accessToken}` } });
+            loadTutorials();
+        } catch (e) {}
+    }
+
+    function resetTutForm() {
+        document.getElementById('tut-form-title').innerText = 'เพิ่มวิธีการใช้งานใหม่';
+        document.getElementById('edit-tut-id').value = '';
+        document.getElementById('tut-title').value = '';
+        document.getElementById('tut-desc').value = '';
+        document.getElementById('tut-file-url').value = '';
+        document.getElementById('tut-thumbnail-url').value = '';
+        document.getElementById('btn-cancel-tut').style.display = 'none';
+    }
+
+    checkAuth();
+</script>
+</body>
+</html>
+
+</body>
+</html>
+
+</body>
+</html>

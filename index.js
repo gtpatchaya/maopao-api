@@ -2,9 +2,80 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const cookieParser = require('cookie-parser');
+const path = require('path');
+const multer = require('multer');
+const fs = require('fs');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = 3000;
+
+// PARSERS FIRST (Needed for Login)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// SERVE ADMIN PAGE FIRST
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
+});
+app.get('/admin/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
+});
+
+// MULTER CONFIG
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'public', 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+const upload = multer({ storage: storage });
+
+// Admin Login API (Hardcoded as requested)
+app.post('/api/v1/auth/admin-login', (req, res) => {
+  const { email, password } = req.body;
+  if (email === 'admin@mail.com' && password === 'pass@1234') {
+    const token = jwt.sign({ id: 'admin', role: 'Admin' }, process.env.JWT_ACCESS_SECRET);
+    return res.json({ status: 'success', data: { accessToken: token } });
+  }
+  res.status(401).json({ status: 'error', message: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' });
+});
+
+// Upload API (Generic for images, videos, pdfs)
+app.post('/api/v1/upload', (req, res) => {
+  upload.single('file')(req, res, function (err) {
+    if (err) return res.status(500).json({ status: 'error', message: err.message });
+    if (!req.file) return res.status(400).json({ status: 'error', message: 'กรุณาเลือกไฟล์ที่ต้องการอัปโหลด' });
+    
+    // Return the relative URL
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({ status: 'success', data: { 
+      url: fileUrl,
+      filename: req.file.originalname,
+      mimetype: req.file.mimetype,
+      size: req.file.size
+    } });
+  });
+});
+
+// Legacy support for 'image' field if old apps are using it
+app.post('/api/v1/upload-image', (req, res) => {
+  upload.single('image')(req, res, function (err) {
+    if (err) return res.status(500).json({ status: 'error', message: err.message });
+    if (!req.file) return res.status(400).json({ status: 'error', message: 'กรุณาเลือกไฟล์ภาพ' });
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.json({ status: 'success', data: { url: fileUrl } });
+  });
+});
 
 /* =========================
    ✅ CORS CONFIG (ตัวเดียวจบ)
@@ -54,14 +125,13 @@ app.use((req, res, next) => {
 /* =========================
    PARSER
 ========================= */
-app.use(express.json());
-app.use(cookieParser());
 
 /* =========================
    LOGGING MIDDLEWARE (ON/OFF via ENABLE_REQUEST_LOGGING)
 ========================= */
 const logMiddleware = require('./middlewares/logMiddleware');
 app.use(logMiddleware);
+
 
 /* =========================
    ROUTER V1
@@ -91,6 +161,8 @@ const authController = require('./controllers/authController');
 const deviceController = require('./controllers/deviceController');
 const calculationController = require('./controllers/calculationController');
 const userController = require('./controllers/userController');
+const promotionController = require('./controllers/promotionController');
+const tutorialController = require('./controllers/tutorialController');
 const { authenticateToken } = require('./middlewares/authMiddleware');
 
 /* =========================
@@ -131,6 +203,23 @@ v1Router.get('/calculations/analysis/:val', calculationController.calculationAlg
    USER ROUTES
 ========================= */
 v1Router.get('/user/:id', authenticateToken, userController.getById);
+
+/* =========================
+   PROMOTION ROUTES
+======================== */
+v1Router.get('/promotions', promotionController.getPromotions);
+v1Router.post('/promotions', authenticateToken, promotionController.createPromotion); // Admin only eventually
+v1Router.put('/promotions/:id', authenticateToken, promotionController.updatePromotion);
+v1Router.delete('/promotions/:id', authenticateToken, promotionController.deletePromotion);
+
+/* =========================
+   TUTORIAL ROUTES (How-to)
+========================= */
+v1Router.get('/tutorials', tutorialController.getTutorials);
+v1Router.get('/tutorials/:id', tutorialController.getTutorialById);
+v1Router.post('/tutorials', authenticateToken, tutorialController.createTutorial);
+v1Router.put('/tutorials/:id', authenticateToken, tutorialController.updateTutorial);
+v1Router.delete('/tutorials/:id', authenticateToken, tutorialController.deleteTutorial);
 
 /* =========================
    MOUNT ROUTER

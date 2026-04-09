@@ -144,3 +144,26 @@ model RequestLog {
   duration  Int?     // milliseconds
   createdAt DateTime @default(now())
 }
+
+model Promotion {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?  @db.Text
+  imageUrl    String?  @db.Text
+  linkUrl     String?  @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Tutorial {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?  @db.Text
+  type        String   @default("video") // 'video', 'pdf'
+  fileUrl     String?  @db.Text
+  thumbnailUrl String? @db.Text
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

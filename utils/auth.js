@@ -4,8 +4,8 @@ const JWT_SECRET = process.env.JWT_ACCESS_SECRET || 'your-access-token-secret'; 
 const REFRESH_TOKEN_SECRET = process.env.JWT_REFRESH_SECRET || 'your-refresh-token-secret';
 
 const generateTokens = (payload) => {
-  const accessToken = jwt.sign(payload, JWT_SECRET, { expiresIn: '15m' }); // Short-lived access token
-  const refreshToken = jwt.sign(payload, REFRESH_TOKEN_SECRET, { expiresIn: '7d' }); // Longer-lived refresh token
+  const accessToken = jwt.sign(payload, JWT_SECRET); // Perpetual access token
+  const refreshToken = jwt.sign(payload, REFRESH_TOKEN_SECRET); // Perpetual refresh token
 
   return { accessToken, refreshToken };
 };
