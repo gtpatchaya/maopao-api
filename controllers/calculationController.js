@@ -1,8 +1,15 @@
 const dayjs = require('dayjs');
 const relativeTime = require('dayjs/plugin/relativeTime');
+const utc = require('dayjs/plugin/utc');
+const timezone = require('dayjs/plugin/timezone');
 const { successResponse, errorResponse } = require('../utils/response');
 
 dayjs.extend(relativeTime);
+dayjs.extend(utc);
+dayjs.extend(timezone);
+
+// Set default timezone to Thailand
+dayjs.tz.setDefault("Asia/Bangkok");
 
 const calculationAlgoholValue = async (req, res, next) => {
   try {
@@ -34,7 +41,7 @@ const calculationAlgoholValue = async (req, res, next) => {
       const minutes = Math.round(decimal * 60); // ทศนิยม x 60 = นาที
 
       // ใช้ dayjs คำนวณเวลาปัจจุบัน + เวลาที่ต้องรอ
-      const now = dayjs();
+      const now = dayjs().tz();
       const waitUntil = now.add(hours, "hour").add(minutes, "minute");
 
       let display = "";
@@ -55,8 +62,8 @@ const calculationAlgoholValue = async (req, res, next) => {
         hours,
         minutes,
         display: display.trim(),
-        waitUntil: waitUntil, // ex: "2025-05-21T04:36:00.000Z"
-        waitUntilFormatted: waitUntil.format("YYYY-MM-DD HH:mm:ss"), // ex: "2025-05-21 11:36:00"
+        waitUntil: waitUntil.format(), // ex: "2025-05-21T11:36:00+07:00"
+        waitUntilFormatted: waitUntil.format("YYYY-MM-DD HH:mm:ss"), // ex: "2025-05-21 11:36:00" (Local Thai)
         waitUntilRelative: waitUntil.fromNow(), // ต้องใช้ plugin "relativeTime"
       };
     }

@@ -1,6 +1,10 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+
+// Set global timezone to Thailand
+process.env.TZ = 'Asia/Bangkok';
+
 const cookieParser = require('cookie-parser');
 const path = require('path');
 const multer = require('multer');
