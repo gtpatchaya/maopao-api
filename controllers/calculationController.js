@@ -55,7 +55,7 @@ const calculationAlgoholValue = async (req, res, next) => {
         hours,
         minutes,
         display: display.trim(),
-        waitUntil: waitUntil.toISOString(), // ex: "2025-05-21T04:36:00.000Z"
+        waitUntil: waitUntil, // ex: "2025-05-21T04:36:00.000Z"
         waitUntilFormatted: waitUntil.format("YYYY-MM-DD HH:mm:ss"), // ex: "2025-05-21 11:36:00"
         waitUntilRelative: waitUntil.fromNow(), // ต้องใช้ plugin "relativeTime"
       };
