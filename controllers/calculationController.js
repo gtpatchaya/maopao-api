@@ -26,14 +26,14 @@ const calculationAlgoholValue = async (req, res, next) => {
     }
 
     let status = "low";
-    if (value > 50) {
+    if (value >= 50) {
       status = "height";
     } else if (value >= 20 && value < 50) {
       status = "medium";
     }
 
     let waitTime = null;
-    if (value > 50) {
+    if (value >= 50) {
       // สูตรการคำนวณ: (ผลลัพธ์ - 50) / 10 = เวลาที่ต้องรอ
       const raw = (value - 50) / 10;
       const hours = Math.floor(raw); // หลักหน่วย = ชั่วโมง
