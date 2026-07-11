@@ -1,5 +1,5 @@
 const prisma = require('../prismaClient');
-const { successResponse, errorResponse } = require('../utils/response');
+const { successResponse, errorResponse, toUTC7 } = require('../utils/response');
 const { randomUUID: v4 } = require('crypto');
 const { Mutex } = require('async-mutex'); // Import Mutex
 
@@ -241,7 +241,13 @@ const getDeviceRecordsBySerialNumber = async (req, res, next) => {
       orderBy: { timestamp: "desc" }
     });
 
-    res.status(200).json(successResponse(200, "Success", records));
+    const mapped = records.map(r => ({
+      ...r,
+      timestamp: toUTC7(r.timestamp),
+      timeUpdate: toUTC7(r.timeUpdate),
+    }));
+
+    res.status(200).json(successResponse(200, "Success", mapped));
   } catch (error) {
     console.error("Error getting device records:", error);
     res.status(500).json(errorResponse(500, "Internal server error"));
