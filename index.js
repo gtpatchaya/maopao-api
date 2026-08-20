@@ -28,12 +28,21 @@ app.get('/admin/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'admin', 'index.html'));
 });
 
-// MULTER CONFIG
+const os = require('os');
+
+// MULTER CONFIG (Vercel Serverless Safe)
+const isVercel = process.env.VERCEL || process.env.NOW_BUILDER;
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    const uploadDir = path.join(__dirname, 'public', 'uploads');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
+    const uploadDir = isVercel
+      ? os.tmpdir()
+      : path.join(__dirname, 'public', 'uploads');
+    try {
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+    } catch (err) {
+      console.warn("⚠️ Upload dir warning:", err.message);
     }
     cb(null, uploadDir);
   },

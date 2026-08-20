@@ -20,6 +20,10 @@ const getById = async (req, res) => {
     }
   } catch (error) {
     console.error("Error getting user by id:", error);
+    res.status(500).json(errorResponse(500, "Internal server error"));
+  }
+};
+
 const deleteAccount = async (req, res) => {
   try {
     const userId = req.user?.userId || req.user?.id;

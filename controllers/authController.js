@@ -1,6 +1,6 @@
 const prisma = require('../prismaClient');
 const { z } = require('zod');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const { generateTokens, cookieOptions } = require('../utils/auth');
 const { successResponse, errorResponse } = require('../utils/response');
 
