@@ -207,6 +207,8 @@ v1Router.get('/calculations/analysis/:val', calculationController.calculationAlg
    USER ROUTES
 ========================= */
 v1Router.get('/user/:id', authenticateToken, userController.getById);
+v1Router.delete('/user/account', authenticateToken, userController.deleteAccount);
+
 
 /* =========================
    PROMOTION ROUTES

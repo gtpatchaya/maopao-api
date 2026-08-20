@@ -20,10 +20,38 @@ const getById = async (req, res) => {
     }
   } catch (error) {
     console.error("Error getting user by id:", error);
-    res.status(500).json(errorResponse(500, "Internal server error"));
+const deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user?.userId || req.user?.id;
+    if (!userId) {
+      return res.status(400).json(errorResponse(400, "ไม่พบรหัสผู้ใช้งาน"));
+    }
+
+    // 1. Unassign devices associated with this user
+    await prisma.device.updateMany({
+      where: { userId },
+      data: { userId: null },
+    });
+
+    // 2. Delete user consent records
+    await prisma.userConsent.deleteMany({
+      where: { userId },
+    });
+
+    // 3. Delete user record
+    await prisma.user.delete({
+      where: { id: userId },
+    });
+
+    return res.status(200).json(successResponse(200, "ลบบัญชีผู้ใช้สำเร็จ"));
+  } catch (error) {
+    console.error("❌ Delete account error:", error);
+    return res.status(500).json(errorResponse(500, error?.message || "Internal server error"));
   }
 };
 
 module.exports = {
-  getById
+  getById,
+  deleteAccount,
 };
+
